@@ -23,6 +23,31 @@ struct node {
 	struct node* first_child;
 };
 
+void error() {
+	printf("Некорректный ввод! Вставка не случилась.\n");
+}
+
+const char* print_enum(pets p) {
+	if (p == cats) {
+		return "cats";
+	}
+	else if (p == dogs) {
+		return "dogs";
+	}
+	else if (p == parrots) {
+		return "parrots";
+	}
+	else if (p == fish) {
+		return "fish";
+	}
+	else if (p == humsters) {
+		return "humsters";
+	}
+	else {
+		error();
+	}
+}
+
 bool check(char* c, pets* p) {
 	if (strcmp(c, "cats") == 0) {
 		*p = cats;
@@ -45,7 +70,7 @@ bool check(char* c, pets* p) {
 		return true;
 	}
 	else {
-		printf("Некорректный ввод! \n");
+		error();
 		return false;
 	}
 }
@@ -64,6 +89,7 @@ node* create_tree() {
 	}
 	else {
 		printf("Дерево не создано!\n");
+		return NULL;
 	}
 }
 
@@ -91,34 +117,23 @@ bool add(node** t, pets val, char* path) {
 	}
 }
 
-void scan_tree(node* t) { //termination command
-	int n;
-	printf("Введите количество вершин: ");
-	scanf("%d", &n);
-	for (int i = 0; i < n; i++) {
+void scan_tree(node* t) { 
+	printf("Если хотите остановить ввод, напишите 'stop this'. \n");
+	while (true) {
 		char com[POOL];
 		char word[POOL];
-		printf("Введите пару домашнее животное, команда: ");
+		printf("Введите пару домашнее животное, путь: ");
 		scanf("%s%s", word, com);
+		if ((strcmp(word,"stop") == 0) && (strcmp(com,"this") == 0)) {
+			break;
+		}
 		pets p;
 		if (check(word, &p)) {
 			if (!add(&t, p, com)) {
-				printf("Вставка не случилась \n");
+				error();
 			}
 		}
-		else {
-			printf("Узел не был создан!");
-		}
 	}
-}
-
-void print_dfs(node* t) {
-	if (t == NULL) {
-		return;
-	}
-	print_dfs(t->first_child);
-	printf("%d ", t->val);
-	print_dfs(t->next_bro);
 }
 
 typedef struct {
@@ -165,7 +180,8 @@ void print_bfs(node* t) {
 	if (t == NULL) {
 		return;
 	}
-	printf("%d\n", t->val);
+	const char* word = print_enum(t->val);
+	printf("%s\n", word);
 	queue q;
 	Create_q(&q);
 	if (t->first_child == NULL) {
@@ -184,7 +200,8 @@ void print_bfs(node* t) {
 				Push_q(&q, bro->first_child);
 				arr[lvl + 1]++;
 			}
-			printf("%d ", bro->val);
+			const char* tmp = print_enum(bro->val);
+			printf("%s ", tmp);
 			if (arr[lvl] != 0) {
 				arr[lvl]--;
 			}
@@ -199,18 +216,35 @@ void print_bfs(node* t) {
 	Destroy(&q);
 }
 
-void tree_degree(node* t) {
+void print_degree(node* t, int max, int cnt) {
 	if (t == NULL) {
+		printf("Степень дерева: 0 \n");
+		printf("Количество вершин дерева с равными дереву степенями: 0 \n");
+	}
+	else if (t->first_child == NULL) {
+		printf("Степень дерева: 0 \n");
+		printf("Количество вершин дерева с равными дереву степенями: 1 \n");
+	}
+	else {
+		printf("Степень дерева: %d \n", max);
+		printf("Количество вершин дерева с равными дереву степенями: %d \n", cnt);
+	}
+}
+
+void tree_degree(node* t) {
+	int cnt = 0;
+	int max = 0;
+	if (t == NULL) {
+		print_degree(t, max, cnt);
 		return;
 	}
 	queue q;
 	Create_q(&q);
 	if (t->first_child == NULL) {
+		print_degree(t, max, cnt);
 		return;
 	}
 	Push_q(&q, t->first_child);
-	int cnt = 0;
-	int max = 0;
 	while (!Empty_q(&q)) {
 		int k = 0;
 		node* bro = Pop_q(&q);
@@ -229,8 +263,7 @@ void tree_degree(node* t) {
 			cnt++;
 		}
 	}
-	printf("Степень дерева: %d \n", max);
-	printf("Количество вершин дерева с равными дереву степенями: %d \n", cnt);
+	print_degree(t, max, cnt);
 	Destroy(&q);
 }
 
@@ -285,18 +318,70 @@ void remove_node(node** t) {
 	}
 }
 
+void delete_tree(node* t) {
+	char com[POOL];
+	printf("Если хотите удалить корень, введите 'r'. \n");
+	printf("Введите путь к элементу, который хотите удалить: ");
+	scanf("%s", com);
+	if (strcmp(com, "r") == 0) {
+		remove_node(&t);
+	}
+	else {
+		remove_node(find(&t, com));
+	}
+}
+
+void instruction() {
+	printf("Доступные команды: \n");
+	printf("Создать дерево - 'create' . \n");
+	printf("Добавить элемент в дерево - 'add' . \n");
+	printf("Удалить элемент из дерева - 'delete' . \n");
+	printf("Печать дерева - 'print' \n");
+	printf("Определить степень дерева и кол-во вершин, степени которых равных ей - 'degree' . \n");
+	printf("Элементы enum pets: cats, dogs, parrots, fish, humsters. \n");
+	printf("Чтобы вывести справку, напишите: 'help' .\n");
+}
+
 
 int main() {
 	setlocale(LC_ALL, "rus");
 	node* t = NULL;
-	t = create_tree();
-	scan_tree(t);
-	print_bfs(t);
-	tree_degree(t);
-	char com[POOL];
-	printf("Введите путь к элементу, который хотите удалить: ");
-	scanf("%s", com);
-	remove_node(find(&t, com));
-	print_bfs(t);
+	instruction();
+	while (true) {
+		printf("Введите команду: ");
+		char com[POOL];
+		scanf("%s", com);
+		if (strcmp(com, "create") == 0) {
+			t = create_tree();
+		}
+		else if (strcmp(com, "add") == 0) {
+			scan_tree(t);
+		}
+		else if (strcmp(com, "delete") == 0) {
+			char com[POOL];
+			printf("Если хотите удалить корень, введите 'r'. \n");
+			printf("Введите путь к элементу, который хотите удалить: ");
+			scanf("%s", com);
+			if (strcmp(com, "r") == 0) {
+				remove_node(&t);
+			}
+			else {
+				remove_node(find(&t, com));
+			}
+		}
+		else if (strcmp(com, "print") == 0) {
+			print_bfs(t);
+		}
+		else if (strcmp(com, "degree") == 0) {
+			tree_degree(t);
+		}
+		else if (strcmp(com, "help") == 0) {
+			instruction();
+		}
+		else {
+			printf("Нет такой команды. \n");
+		}
+
+	}
 	return 0;
 }
